@@ -13,7 +13,6 @@ export class OrderController {
 
   @EventPattern('order_created')
   async handleOrderCreated(@Payload() data: any, @Ctx() context: RmqContext) {
-    console.log('Received message:', data);
     await this.orderService.createOrder(data);
     this.rmqService.ack(context);
   }
