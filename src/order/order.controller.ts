@@ -1,5 +1,5 @@
 import { Controller } from '@nestjs/common';
-import { Ctx, EventPattern, Payload, RmqContext } from '@nestjs/microservices';
+import { Ctx, EventPattern, MessagePattern, Payload, RmqContext } from '@nestjs/microservices';
 import { RabbitmqService } from '../rabbitmq.service';
 import { OrderService } from './order.service';
 
@@ -17,11 +17,15 @@ export class OrderController {
     this.rmqService.ack(context);
   }
 
-  @EventPattern('order_paid')
+  @MessagePattern('order_paid')
   async handleOrderPaid(@Payload() data: any, @Ctx() context: RmqContext) {
-    console.log('Received message:', data);
-    // create a payment transaction
-
-    this.rmqService.ack(context);
+    try {
+      const order = await this.orderService.completeOrder(data);
+      return { status: 'success', order: order };
+    } catch(error) {
+      return { status: 'failed', error: error.message };
+    } finally {
+      this.rmqService.ack(context);
+    }
   }
 }
